@@ -1,0 +1,3 @@
+[submodule "include/IVio"]
+	path = include/IVio
+	url = git@github.com:iv-project/IVio.git

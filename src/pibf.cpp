@@ -128,15 +128,24 @@ void write_vcf_fastas(const std::string &vcf_sequence,
 
 void execute_yara_indexer(const std::string& folder, const std::string& fasta_file)
 {
-    std::string yara_filter = "bin/yara_indexer " + folder + "/*.fasta -o " + folder + "REF.index";
+    std::string yara_filter = "bin/yara_indexer " + fasta_file + " -o " + folder + "/REF.index";
     std::cout << yara_filter << std::endl;
     int cmd = system(yara_filter.c_str());
+
+    if (cmd != 0) {
+        throw std::runtime_error("Failed to execute yara_indexer.");
+    }
+    
 }
 
 void execute_yara_mapper(const std::string& output_bam, const std::string& index_dir, const std::string& reads_fasta)
 {
-    std::string yara_args = "bin/yara_mapper " + index_dir + "REF.index " + reads_fasta + " -o " + output_bam;
+    std::string yara_args = "bin/yara_mapper " + index_dir + "/REF.index " + reads_fasta + " -o " + output_bam;
     int cmd = system(yara_args.c_str());
+
+    if (cmd != 0) {
+        throw std::runtime_error("Failed to execute yara_mapper.");
+    }
 }
 
 void execute_dream_yara_indexer(const std::string& folder, const std::string& fasta_file) 
@@ -146,10 +155,18 @@ void execute_dream_yara_indexer(const std::string& folder, const std::string& fa
     int cmd1 = system(yara_filter.c_str());
     int cmd2 = system(yara_indexer.c_str());
 
+    if (cmd1 != 0 || cmd2 != 0) {
+        throw std::runtime_error("Failed to execute yara_indexer.");
+    }
+
 }
 
 void execute_dream_yara_mapper(const std::string& output_bam, const std::string& index_dir, const std::string& reads_fasta) 
 {
     std::string yara_args = "bin/dream_yara_mapper -t 8 -ft bloom -e 0.03 -fi " + index_dir + "IBF.filter -o " + output_bam + " " + index_dir + " " + reads_fasta;
     int cmd = system(yara_args.c_str());
+
+    if (cmd != 0) {
+        throw std::runtime_error("Failed to execute yara_mapper.");
+    }
 }

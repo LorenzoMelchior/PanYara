@@ -1,18 +1,40 @@
 #include "pibf.h"
-
+#include <argparse.hpp>
 
 int main(int argc, char const ** argv)
 {
-    // Args: Output.bam, Index_dir, Reads.fasta, kmer_size
-    if (argc < 5) {
-        std::cerr << "Usage: " << argv[0] << " <output.bam> <index_dir> <reads.fasta> <kmer_size>" << std::endl;
-        return 1;
+
+    /////////////////// Parse arguments ////////////////////////
+
+    argparse::ArgumentParser program("pan_yara_mapper");
+
+    program.add_argument("-r", "--reads")
+        .help("Read file location")
+        .required();
+
+    program.add_argument("-i", "--index_folder")
+        .help("Index folder location")
+        .default_value("index");
+
+    program.add_argument("--dream")
+        .help("Use Dream-Yara instead of Yara")
+        .default_value(false)
+        .implicit_value(true);
+
+    try {
+        program.parse_args(argc, argv);
+    } catch (const std::runtime_error& err) {
+        std::cout << err.what() << std::endl;
+        std::cout << program;
+        exit(1);
     }
 
-    std::string output_bam = argv[1];
-    std::string index_dir = argv[2];
-    std::string reads_fasta = argv[3];
-    std::size_t kmer_size = std::stoi(argv[4]);
+    std::string reads_fasta = program.get<std::string>("--reads");
+    std::string index_dir = program.get<std::string>("--index_folder");
+    const bool dream = program.get<bool>("--dream");
+
+
+    /////////////////// Read VCF files ////////////////////////
 
     std::size_t vcf_count = 0;
     for (const auto& entry : std::filesystem::directory_iterator(index_dir)) {
@@ -22,10 +44,15 @@ int main(int argc, char const ** argv)
         }
     }
 
-    pangenomic_hibf pibf{4u, 3u, 8*8192u, vcf_count};
+    const std::string output_bam = "results.bam";
+
+    /////////////////// Load PIBF ////////////////////////
+
+    pangenomic_hibf pibf{3u, 8*8192u, vcf_count};
+    std::size_t kmer_size = pibf.get_k();
     pibf.load_from_disk(index_dir);
 
-    
+    ///////////////// Execute Mapping //////////////////////
     
     auto reader = ivio::fasta::reader{{.input = reads_fasta, .compressed = false}};
     std::size_t is_in_var[vcf_count] = {};
@@ -69,7 +96,11 @@ int main(int argc, char const ** argv)
                 if (!need_ref) {
                     need_ref = 1;
                     std::cout << 1 << std::endl;
-                    execute_yara_mapper(index_dir + "/reference/" + output_bam, index_dir + "/reference/", reads_fasta);
+                    if (dream) {
+                        execute_dream_yara_mapper(index_dir + "/reference/" + output_bam, index_dir + "/reference/", reads_fasta);
+                    } else {
+                        execute_yara_mapper(index_dir + "/reference/" + output_bam, index_dir + "/reference/", reads_fasta);
+                    }
                 }
                 std::filesystem::copy_file(index_dir + "/reference/" + output_bam, index_dir + "/vcf_" + std::to_string(i+1) + "/" + output_bam, std::filesystem::copy_options::overwrite_existing);
             }
@@ -78,7 +109,11 @@ int main(int argc, char const ** argv)
                 for (const auto& entry : std::filesystem::directory_iterator(index_dir + "/vcf_" + std::to_string(i+1))) 
                 {
                     std::cout << 2 << std::endl;
-                    execute_yara_mapper(entry.path().string() + "/" + output_bam, entry.path().string() + "/", reads_fasta);
+                    if (dream) {
+                        execute_dream_yara_mapper(entry.path().string() + "/" + output_bam, entry.path().string() + "/", reads_fasta);
+                    } else {
+                        execute_yara_mapper(entry.path().string() + "/" + output_bam, entry.path().string() + "/", reads_fasta);
+                    }
                 }
             }
 

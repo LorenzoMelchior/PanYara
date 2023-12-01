@@ -27,7 +27,8 @@ int main(int argc, char const ** argv)
 
     program.add_argument("-l", "--read_length")
         .help("Read length")
-        .required();
+        .required()
+        .scan<'u', std::size_t>();
 
     program.add_argument("--dream")
         .help("Use Dream-Yara instead of Yara")
@@ -42,13 +43,12 @@ int main(int argc, char const ** argv)
         exit(1);
     }
 
+
     std::string reference_filename = program.get<std::string>("--reference");
     std::string vcf_folder_path = program.get<std::string>("--vcf_folder");
     std::string index_folder_path = program.get<std::string>("--index_folder");
     std::size_t read_length = program.get<std::size_t>("--read_length");
     const bool dream = program.get<bool>("--dream");
-
-
 
 
     ///////////////// Read VCF files ////////////////////////
@@ -98,9 +98,9 @@ int main(int argc, char const ** argv)
 
     ///////////////// Index the PIBF ////////////////////////
 
-    std::size_t k = 21;
+    std::cout << "Indexing the PIBF...";
 
-    pangenomic_hibf pibf{k, 3u, 8*8192u, vcf_files.size()};
+    pangenomic_hibf pibf{3u, 8*8192u, vcf_files.size()};
 
     pibf.feed_reference(reference_filename);
 
@@ -111,8 +111,12 @@ int main(int argc, char const ** argv)
 
     pibf.save_to_disk(index_folder_path);
 
+    std::cout << "Done." << std::endl;
+
 
     /////////////////// Index Yara ////////////////////////
+
+    std::cout << "Indexing Yara...";
 
 
     auto ref_reader = ivio::fasta::reader{{.input = reference_filename}};

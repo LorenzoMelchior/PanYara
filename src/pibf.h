@@ -64,14 +64,18 @@ class pangenomic_hibf
         
 
     public:
-        pangenomic_hibf(std::size_t k, std::size_t number_of_hash_funcs, std::size_t bit_array_size, std::size_t number_of_vcf_files)
+        pangenomic_hibf(std::size_t number_of_hash_funcs, std::size_t bit_array_size, std::size_t number_of_vcf_files)
                 : all_variants{seqan3::bin_count{1u}, seqan3::bin_size{bit_array_size}},
                    positives{seqan3::bin_count{number_of_vcf_files}, seqan3::bin_size{bit_array_size}}, 
                    negatives{seqan3::bin_count{number_of_vcf_files}, seqan3::bin_size{bit_array_size}} {
-            this->k = k;
+            this->k = 19u;
             this->number_of_hash_funcs = number_of_hash_funcs;
             this->bit_array_size = bit_array_size;
 
+        }
+
+        std::size_t get_k() {
+            return this->k;
         }
 
         void feed_reference(const std::string &reference){

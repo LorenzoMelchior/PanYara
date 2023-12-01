@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(PanYara)
 
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/seqan3/include/seqan3/version.hpp")
     set (CMAKE_INCLUDE_PATH
         ${CMAKE_CURRENT_SOURCE_DIR}/include/seqan3/include

@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <cstdlib>
+#include <argparse.hpp>
 
 #include "pibf.h"
 
@@ -8,22 +9,54 @@
 int main(int argc, char const ** argv)
 {
 
-    ///////////////// Read reference and VCF files ////////////////////////
+    /////////////////// Parse arguments ////////////////////////
 
-    if (argc < 4) {
-        std::cerr << "Usage: " << argv[0] << " <reference.fasta> <vcf_folder_path> <read_length>" << std::endl;
-        return 1;
-    }
+    argparse::ArgumentParser program("pan_yara_indexer");
 
-    std::string reference_filename = argv[1];
+    program.add_argument("-r", "--reference")
+        .help("Reference file location")
+        .required();
 
-    std::string folder_path = argv[2];
-    std::vector<std::string> vcf_files;
+    program.add_argument("-v", "--vcf_folder")
+        .help("Folder containing VCF files")
+        .required();
+    
+    program.add_argument("-i", "--index_folder")
+        .help("Index folder location")
+        .default_value("index");
 
-    std::size_t read_length = std::stoi(argv[3]);
+    program.add_argument("-l", "--read_length")
+        .help("Read length")
+        .required();
+
+    program.add_argument("--dream")
+        .help("Use Dream-Yara instead of Yara")
+        .default_value(false)
+        .implicit_value(true);
 
     try {
-        for (const auto& entry : std::filesystem::directory_iterator(folder_path)) 
+        program.parse_args(argc, argv);
+    } catch (const std::runtime_error& err) {
+        std::cout << err.what() << std::endl;
+        std::cout << program;
+        exit(1);
+    }
+
+    std::string reference_filename = program.get<std::string>("--reference");
+    std::string vcf_folder_path = program.get<std::string>("--vcf_folder");
+    std::string index_folder_path = program.get<std::string>("--index_folder");
+    std::size_t read_length = program.get<std::size_t>("--read_length");
+    const bool dream = program.get<bool>("--dream");
+
+
+
+
+    ///////////////// Read VCF files ////////////////////////
+
+    std::vector<std::string> vcf_files;
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(vcf_folder_path)) 
         {
             if (entry.is_regular_file() && entry.path().extension() == ".vcf") 
             {
@@ -40,11 +73,6 @@ int main(int argc, char const ** argv)
 
     ////////////////// Create indexing folder structure /////////////////////
 
-    std::string index_folder_path = "index";
-
-    if (argc > 4) {
-        index_folder_path = argv[4];
-    }
 
     if (std::filesystem::exists(index_folder_path)) 
     {
@@ -70,9 +98,9 @@ int main(int argc, char const ** argv)
 
     ///////////////// Index the PIBF ////////////////////////
 
+    std::size_t k = 21;
 
-
-    pangenomic_hibf pibf{4u, 3u, 8*8192u, vcf_files.size()};
+    pangenomic_hibf pibf{k, 3u, 8*8192u, vcf_files.size()};
 
     pibf.feed_reference(reference_filename);
 
@@ -84,7 +112,7 @@ int main(int argc, char const ** argv)
     pibf.save_to_disk(index_folder_path);
 
 
-    /////////////////// Index Dream-Yara ////////////////////////
+    /////////////////// Index Yara ////////////////////////
 
 
     auto ref_reader = ivio::fasta::reader{{.input = reference_filename}};
@@ -97,8 +125,11 @@ int main(int argc, char const ** argv)
     // MUst convert filename from char to string!
     std::string reference_folder_path = index_folder_path + "/reference";
     std::string reference_filename_string = reference_filename;
-    execute_yara_indexer(reference_folder_path, reference_filename_string);
-
+    if (dream) {
+        execute_dream_yara_indexer(reference_folder_path, reference_filename_string);
+    } else {
+        execute_yara_indexer(reference_folder_path, reference_filename_string);
+    }
 
     std::size_t i = 1;
     for (const std::string& vcf: vcf_files)
@@ -137,13 +168,14 @@ int main(int argc, char const ** argv)
 
 
             std::string fasta_input = folder_path + "/*.fasta";
-            execute_yara_indexer(folder_path, fasta_input);
-
+            if (dream) {
+                execute_dream_yara_indexer(folder_path, fasta_input);
+            } else {
+                execute_yara_indexer(folder_path, fasta_input);
+            }
         }
         i++;
     }
-
-
 
     return 0;
 }

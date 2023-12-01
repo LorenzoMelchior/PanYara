@@ -26,8 +26,6 @@ int main(int argc, char const ** argv)
     pibf.load_from_disk(index_dir);
 
     
-
-    
     
     auto reader = ivio::fasta::reader{{.input = reads_fasta, .compressed = false}};
     std::size_t is_in_var[vcf_count] = {};

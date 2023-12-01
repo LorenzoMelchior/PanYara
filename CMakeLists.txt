@@ -23,6 +23,8 @@ endif ()
 find_package(SeqAn3 QUIET REQUIRED CONFIG)
 find_package(IVio PATHS include/IVio)
 
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+
 add_executable(pan_yara_indexer src/pan_indexer.cpp
                                 src/pibf.cpp)
 

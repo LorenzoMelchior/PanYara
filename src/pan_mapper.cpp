@@ -90,12 +90,11 @@ int main(int argc, char const ** argv)
 
         for (std::size_t i = 0; i < vcf_count; i++) 
         {
-            std::size_t need_ref = 0;
+            bool need_ref = false;
             if (is_in_ref[i] >=  is_in_var[i]) 
             {
                 if (!need_ref) {
-                    need_ref = 1;
-                    std::cout << 1 << std::endl;
+                    need_ref = true;
                     if (dream) {
                         execute_dream_yara_mapper(index_dir + "/reference/" + output_bam, index_dir + "/reference/", reads_fasta);
                     } else {
@@ -108,7 +107,6 @@ int main(int argc, char const ** argv)
             {
                 for (const auto& entry : std::filesystem::directory_iterator(index_dir + "/vcf_" + std::to_string(i+1))) 
                 {
-                    std::cout << 2 << std::endl;
                     if (dream) {
                         execute_dream_yara_mapper(entry.path().string() + "/" + output_bam, entry.path().string() + "/", reads_fasta);
                     } else {

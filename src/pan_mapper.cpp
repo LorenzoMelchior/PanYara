@@ -48,22 +48,29 @@ int main(int argc, char const ** argv)
 
     /////////////////// Load PIBF ////////////////////////
 
-    pangenomic_hibf pibf{3u, 8*8192u, vcf_count};
+    pangenomic_hibf pibf{3u, 16000000000u, vcf_count};
     std::size_t kmer_size = pibf.get_k();
     pibf.load_from_disk(index_dir);
 
     ///////////////// Execute Mapping //////////////////////
     
-    auto reader = ivio::fasta::reader{{.input = reads_fasta, .compressed = false}};
+    auto reader = ivio::fastq::reader{{.input = reads_fasta, .compressed = false}};
     std::size_t is_in_var[vcf_count] = {};
     std::size_t is_in_ref[vcf_count] = {};
+
+    std::size_t case_1 = 0;
+    std::size_t case_2 = 0;
+    std::size_t case_3 = 0;
+    std::size_t case_4 = 0;
 
     for (auto record_view : reader) {
 
         std::string read(record_view.seq);
+        std::cout << "READ: " << read << std::endl;
         std::size_t k_mer_count = 0;
 
-        for (std::size_t i = 0; i <= read.length() - kmer_size; ++i) {
+        for (std::size_t i = 0; i <= read.length() - kmer_size; ++i) 
+        {
             std::string kmer = read.substr(i, kmer_size);
 
             pibf_results results = pibf.query_kmer(kmer);
@@ -72,16 +79,27 @@ int main(int argc, char const ** argv)
             {
                 for (std::size_t i = 0; i < vcf_count; i++) 
                 {
+                    std::cout << results.positives[i] << " " << results.negatives[i] << std::endl;
                     if (results.positives[i] == results.negatives[i]) 
                     {
                         is_in_var[i]++;
                         is_in_ref[i]++;
+                        std::cout << "Found in ref and variant" << std::endl;
+                        case_4++;
                     }
                     else if (results.negatives[i]) {
                         is_in_ref[i]++;
+                        std::cout << "Found in reference only" << std::endl;
+                        case_3++;
                     }
                     else if (results.positives[i]) {
                         is_in_var[i]++;
+                        std::cout << "Found in variant" << std::endl;
+                        case_2++;
+                    }
+                    else {
+                        std::cout << "Not found anywhere" << std::endl;
+                        case_1++;
                     }
                 }
             }
@@ -120,7 +138,10 @@ int main(int argc, char const ** argv)
 
 
     }
-
+    std::cout << "Not found anywhere: " << case_1 << std::endl;
+    std::cout << "Found in variant: " << case_2 << std::endl;
+    std::cout << "Found in reference only: " << case_3 << std::endl;
+    std::cout << "Found in ref and variant: " << case_4 << std::endl;
 
 
 

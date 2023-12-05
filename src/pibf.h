@@ -66,9 +66,9 @@ class pangenomic_hibf
     public:
         pangenomic_hibf(std::size_t number_of_hash_funcs, std::size_t bit_array_size, std::size_t number_of_vcf_files)
                 : all_variants{seqan3::bin_count{1u}, seqan3::bin_size{bit_array_size}},
-                   positives{seqan3::bin_count{number_of_vcf_files}, seqan3::bin_size{bit_array_size}}, 
-                   negatives{seqan3::bin_count{number_of_vcf_files}, seqan3::bin_size{bit_array_size}} {
-            this->k = 19u;
+                   positives{seqan3::bin_count{number_of_vcf_files}, seqan3::bin_size{bit_array_size/200}}, 
+                   negatives{seqan3::bin_count{number_of_vcf_files}, seqan3::bin_size{bit_array_size/200}} {
+            this->k = 21u;
             this->number_of_hash_funcs = number_of_hash_funcs;
             this->bit_array_size = bit_array_size;
 

@@ -35,6 +35,11 @@ int main(int argc, char const ** argv)
         .default_value(false)
         .implicit_value(true);
 
+    program.add_argument("--overwrite")
+        .help("Overwrite index folder if it already exists")
+        .default_value(false)
+        .implicit_value(true);
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
@@ -49,6 +54,7 @@ int main(int argc, char const ** argv)
     std::string index_folder_path = program.get<std::string>("--index_folder");
     std::size_t read_length = program.get<std::size_t>("--read_length");
     const bool dream = program.get<bool>("--dream");
+    const bool overwrite = program.get<bool>("--overwrite");
 
 
     ///////////////// Read VCF files ////////////////////////
@@ -69,21 +75,24 @@ int main(int argc, char const ** argv)
         std::cerr << "Filesystem error: " << e.what() << std::endl;
         return 1;
     }
-
-
+    
     ////////////////// Create indexing folder structure /////////////////////
 
 
     if (std::filesystem::exists(index_folder_path)) 
     {
-        std::cout << "Index folder already exists. Do you want to override it (y/n)?" << std::endl;
-        char answer;
-        std::cin >> answer;
-        if (answer == 'y') {
-            std::filesystem::remove_all(index_folder_path);
+        if (!overwrite) {
+            std::cout << "Index folder already exists. Do you want to override it (y/n)?" << std::endl;
+            char answer;
+            std::cin >> answer;
+            if (answer == 'y') {
+                std::filesystem::remove_all(index_folder_path);
+            } else {
+                std::cout << "Aborting." << std::endl;
+                return 1;
+            }
         } else {
-            std::cout << "Aborting." << std::endl;
-            return 1;
+            std::filesystem::remove_all(index_folder_path);
         }
     }
 
@@ -100,9 +109,11 @@ int main(int argc, char const ** argv)
 
     std::cout << "Indexing the PIBF...";
 
-    pangenomic_hibf pibf{3u, 8*8192u, vcf_files.size()};
+    pangenomic_hibf pibf{3u, 16000000000u, vcf_files.size()};
 
     pibf.feed_reference(reference_filename);
+
+    std::cout << "Reference fed." << std::endl;
 
     for (std::size_t index = 0; index < vcf_files.size(); ++index) 
     {
